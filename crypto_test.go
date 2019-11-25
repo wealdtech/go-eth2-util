@@ -53,7 +53,7 @@ func TestPrivateKeyFromSeedAndPath(t *testing.T) {
 		},
 		{
 			name: "EmptySeed",
-			path: "m/12381/60/0/0",
+			path: "m/12381/3600/0/0",
 			err:  errors.New("seed must be at least 128 bits"),
 		},
 		{
@@ -89,8 +89,8 @@ func TestPrivateKeyFromSeedAndPath(t *testing.T) {
 		{
 			name: "Good1",
 			seed: _byteArray("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"),
-			path: "m/12381/60/0/0",
-			sk:   _bigInt("23520196518361351320986536197165395316083464589413093664545240082806119847177"),
+			path: "m/12381/3600/0/0",
+			sk:   _bigInt("31676788419929922777864946442677915531199062343799598297489487887255736884383"),
 		},
 	}
 
