@@ -109,6 +109,13 @@ func TestPrivateKeyFromSeedAndPath(t *testing.T) {
 	}
 }
 
+func TestShortPrivateKey(t *testing.T) {
+	seed := _byteArray("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")
+	path := "m/12381/3600/0/41"
+	_, err := util.PrivateKeyFromSeedAndPath(seed, path)
+	assert.Nil(t, err)
+}
+
 func TestDeriveMasterKey(t *testing.T) {
 	tests := []struct {
 		name string

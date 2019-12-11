@@ -76,7 +76,12 @@ func PrivateKeyFromSeedAndPath(seed []byte, path string) (*types.BLSPrivateKey, 
 		}
 	}
 
-	return types.BLSPrivateKeyFromBytes(sk.Bytes())
+	// SK can be shorter than 32 bytes so left-pad it here.
+	bytes := make([]byte, 32)
+	skBytes := sk.Bytes()
+	copy(bytes[32-len(skBytes):], skBytes)
+
+	return types.BLSPrivateKeyFromBytes(bytes)
 }
 
 // DeriveMasterSK derives the master secret key from a seed.
