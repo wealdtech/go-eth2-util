@@ -23,7 +23,7 @@ import (
 func SHA3256(data ...[]byte) []byte {
 	hash := sha3.New256()
 	for _, d := range data {
-		hash.Write(d)
+		_, _ = hash.Write(d)
 	}
 	return hash.Sum(nil)
 }
@@ -32,7 +32,7 @@ func SHA3256(data ...[]byte) []byte {
 func SHA256(data ...[]byte) []byte {
 	hash := sha256.New()
 	for _, d := range data {
-		hash.Write(d)
+		_, _ = hash.Write(d)
 	}
 	return hash.Sum(nil)
 }
@@ -41,7 +41,7 @@ func SHA256(data ...[]byte) []byte {
 func Keccak256(data ...[]byte) []byte {
 	hash := sha3.NewLegacyKeccak256()
 	for _, d := range data {
-		hash.Write(d)
+		_, _ = hash.Write(d)
 	}
 	return hash.Sum(nil)
 }
