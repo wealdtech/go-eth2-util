@@ -1,4 +1,4 @@
-// Copyright © 2019 Weald Technology Trading
+// Copyright 2019, 2020 Weald Technology Trading
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,7 +22,7 @@ import (
 
 	"github.com/pkg/errors"
 	bytesutil "github.com/wealdtech/go-bytesutil"
-	types "github.com/wealdtech/go-eth2-types"
+	e2types "github.com/wealdtech/go-eth2-types/v2"
 	"golang.org/x/crypto/hkdf"
 )
 
@@ -39,7 +39,7 @@ var (
 
 // PrivateKeyFromSeedAndPath generates a private key given a seed and a path.
 // Follows ERC-2334.
-func PrivateKeyFromSeedAndPath(seed []byte, path string) (*types.BLSPrivateKey, error) {
+func PrivateKeyFromSeedAndPath(seed []byte, path string) (*e2types.BLSPrivateKey, error) {
 	if path == "" {
 		return nil, errors.New("no path")
 	}
@@ -81,7 +81,7 @@ func PrivateKeyFromSeedAndPath(seed []byte, path string) (*types.BLSPrivateKey, 
 	skBytes := sk.Bytes()
 	copy(bytes[32-len(skBytes):], skBytes)
 
-	return types.BLSPrivateKeyFromBytes(bytes)
+	return e2types.BLSPrivateKeyFromBytes(bytes)
 }
 
 // DeriveMasterSK derives the master secret key from a seed.
