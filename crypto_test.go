@@ -17,10 +17,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"math/big"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	e2types "github.com/wealdtech/go-eth2-types/v2"
 	util "github.com/wealdtech/go-eth2-util"
 )
 
@@ -32,6 +34,13 @@ func _bigInt(input string) *big.Int {
 func _byteArray(input string) []byte {
 	res, _ := hex.DecodeString(input)
 	return res
+}
+
+func TestMain(m *testing.M) {
+	if err := e2types.InitBLS(); err != nil {
+		os.Exit(1)
+	}
+	os.Exit(m.Run())
 }
 
 func TestPrivateKeyFromSeedAndPath(t *testing.T) {
