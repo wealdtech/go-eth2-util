@@ -10,5 +10,3 @@ require (
 	golang.org/x/crypto v0.0.0-20200414173820-0848c9571904
 	golang.org/x/sys v0.0.0-20200413165638-669c56c373c4 // indirect
 )
-
-replace github.com/wealdtech/go-eth2-types/v2 => ../go-eth2-types
