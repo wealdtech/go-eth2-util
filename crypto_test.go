@@ -43,6 +43,106 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+func TestPrivateKeyForRelativePath(t *testing.T) {
+	tests := []struct {
+		name     string
+		seed     []byte
+		basePath string
+		relativePath string
+		err      error
+		sk       *big.Int
+	}{
+		{
+			name: "Nil",
+			seed: _byteArray("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"),
+			err:  errors.New("invalid basePath, should start with m/<index>"),
+		},
+		{
+			name:     "EmptyPath",
+			basePath: "",
+			seed:     _byteArray("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"),
+			err:      errors.New("invalid basePath, should start with m/<index>"),
+		},
+		{
+			name:     "EmptySeed",
+			basePath: "m/",
+			relativePath: "/12381/3600/0/0",
+			err:      errors.New("seed must be at least 128 bits"),
+		},
+		{
+			name:     "BadPath1",
+			seed:     _byteArray("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"),
+			basePath: "m/bad basePath",
+			err:      errors.New(`relative basePath invalid: /bad basePath`),
+		},
+		{
+			name:     "BadPath2",
+			seed:     _byteArray("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"),
+			basePath: "m/m/12381",
+			err:      errors.New(`relative basePath invalid: /m/12381`),
+		},
+		{
+			name:     "BadPath3",
+			seed:     _byteArray("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"),
+			basePath: "1/m/12381",
+			err:      errors.New(`invalid basePath, should start with m/<index>`),
+		},
+		{
+			name:     "BadPath4",
+			seed:     _byteArray("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"),
+			basePath: "m/12381//0",
+			err:      errors.New(`relative basePath invalid: /12381//0`),
+		},
+		{
+			name:     "BadPath5",
+			seed:     _byteArray("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"),
+			basePath: "m/12381/-1/0",
+			err:      errors.New(`relative basePath invalid: /12381/-1/0`),
+		},
+		{
+			name:     "Good1",
+			seed:     _byteArray("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"),
+			basePath: "m/",
+			relativePath: "/12381/3600/0/0",
+			sk:       _bigInt("31676788419929922777864946442677915531199062343799598297489487887255736884383"),
+		},
+		{
+			name:     "good2",
+			seed:     _byteArray("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"),
+			basePath: "m/12381",
+			relativePath: "/3600/0/0",
+			sk:       _bigInt("31676788419929922777864946442677915531199062343799598297489487887255736884383"),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// derive master key
+			sk, err := util.PrivateKeyFromSeedAndPath(test.seed, test.basePath)
+			if test.err != nil {
+				require.NotNil(t, err)
+				assert.Equal(t, test.err.Error(), err.Error())
+			} else {
+				require.Nil(t, err)
+			}
+
+			if err != nil {
+				return
+			}
+
+			// derive relative path
+			sk, err = util.PrivateKeyForRelativePath(sk.Marshal(),test.relativePath)
+			if test.err != nil {
+				require.NotNil(t, err)
+				assert.Equal(t, test.err.Error(), err.Error())
+			} else {
+				require.Nil(t, err)
+				assert.Equal(t, test.sk.Bytes(), sk.Marshal())
+			}
+		})
+	}
+}
+
 func TestPrivateKeyFromSeedAndPath(t *testing.T) {
 	tests := []struct {
 		name string
@@ -53,12 +153,14 @@ func TestPrivateKeyFromSeedAndPath(t *testing.T) {
 	}{
 		{
 			name: "Nil",
-			err:  errors.New("no path"),
+			seed: _byteArray("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"),
+			err:  errors.New("invalid basePath, should start with m/<index>"),
 		},
 		{
 			name: "EmptyPath",
 			path: "",
-			err:  errors.New("no path"),
+			seed: _byteArray("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"),
+			err:  errors.New("invalid basePath, should start with m/<index>"),
 		},
 		{
 			name: "EmptySeed",
@@ -68,32 +170,32 @@ func TestPrivateKeyFromSeedAndPath(t *testing.T) {
 		{
 			name: "BadPath1",
 			seed: _byteArray("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"),
-			path: "m/bad path",
-			err:  errors.New(`invalid index "bad path" at path component 1`),
+			path: "m/bad basePath",
+			err:  errors.New(`relative basePath invalid: /bad basePath`),
 		},
 		{
 			name: "BadPath2",
 			seed: _byteArray("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"),
 			path: "m/m/12381",
-			err:  errors.New(`invalid master at path component 1`),
+			err:  errors.New(`relative basePath invalid: /m/12381`),
 		},
 		{
 			name: "BadPath3",
 			seed: _byteArray("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"),
 			path: "1/m/12381",
-			err:  errors.New(`not master at path component 0`),
+			err:  errors.New(`invalid basePath, should start with m/<index>`),
 		},
 		{
 			name: "BadPath4",
 			seed: _byteArray("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"),
 			path: "m/12381//0",
-			err:  errors.New(`no entry at path component 2`),
+			err:  errors.New(`relative basePath invalid: /12381//0`),
 		},
 		{
 			name: "BadPath5",
 			seed: _byteArray("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"),
 			path: "m/12381/-1/0",
-			err:  errors.New(`invalid index "-1" at path component 2`),
+			err:  errors.New(`relative basePath invalid: /12381/-1/0`),
 		},
 		{
 			name: "Good1",
