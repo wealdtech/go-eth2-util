@@ -17,6 +17,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"math/big"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -37,42 +38,38 @@ var (
 	l = 48
 )
 
-// PrivateKeyFromSeedAndPath generates a private key given a seed and a path.
-// Follows ERC-2334.
-func PrivateKeyFromSeedAndPath(seed []byte, path string) (*e2types.BLSPrivateKey, error) {
-	if path == "" {
-		return nil, errors.New("no path")
+func validateRelativePath(relativePath string) bool {
+	match, _ := regexp.MatchString(`^(\/(\d\d?\d?\d?\d?\d?))+$`, relativePath)
+	return match
+}
+
+func validateMasterKeyPath(path string) bool {
+	match, _ := regexp.MatchString(`^m\/`, path)
+	return match
+}
+
+func PrivateKeyForRelativePath(key []byte, relativePath string) (*e2types.BLSPrivateKey, error) {
+	if validateMasterKeyPath(relativePath) {
+		return nil, fmt.Errorf("basePath invalid, not relative. if you need to derive basePath from seed please use PrivateKeyFromSeedAndPath")
 	}
-	if len(seed) < 16 {
-		return nil, errors.New("seed must be at least 128 bits")
+	if !validateRelativePath(relativePath) {
+		return nil, fmt.Errorf("relative basePath invalid: %s", relativePath)
 	}
-	pathBits := strings.Split(path, "/")
-	var sk *big.Int
-	var err error
-	for i := range pathBits {
+
+	pathBits := strings.Split(relativePath, "/")
+	sk := new(big.Int).SetBytes(key)
+	for i := 1 ; i < len(pathBits) ; i++ { // we skip index 0 as it's empty for relative paths
 		if pathBits[i] == "" {
-			return nil, fmt.Errorf("no entry at path component %d", i)
+			return nil, fmt.Errorf("no entry at basePath component %d", i)
 		}
-		if pathBits[i] == "m" {
-			if i != 0 {
-				return nil, fmt.Errorf("invalid master at path component %d", i)
-			}
-			sk, err = DeriveMasterSK(seed)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to generate master key at path component %d", i)
-			}
-		} else {
-			if i == 0 {
-				return nil, fmt.Errorf("not master at path component %d", i)
-			}
-			index, err := strconv.ParseInt(pathBits[i], 10, 32)
-			if err != nil || index < 0 {
-				return nil, fmt.Errorf("invalid index %q at path component %d", pathBits[i], i)
-			}
-			sk, err = DeriveChildSK(sk, uint32(index))
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to derive child SK at path component %d", i)
-			}
+
+		index, err := strconv.ParseInt(pathBits[i], 10, 32)
+		if err != nil || index < 0 {
+			return nil, fmt.Errorf("invalid index %q at basePath component %d", pathBits[i], i)
+		}
+		sk, err = DeriveChildSK(sk, uint32(index))
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to derive child SK at basePath component %d", i)
 		}
 	}
 
@@ -82,6 +79,30 @@ func PrivateKeyFromSeedAndPath(seed []byte, path string) (*e2types.BLSPrivateKey
 	copy(bytes[32-len(skBytes):], skBytes)
 
 	return e2types.BLSPrivateKeyFromBytes(bytes)
+}
+
+// PrivateKeyFromSeedAndPath generates a private key given a seed and a basePath.
+// Follows ERC-2334.
+func PrivateKeyFromSeedAndPath(seed []byte, path string) (*e2types.BLSPrivateKey, error) {
+	if len(seed) < 16 {
+		return nil, errors.New("seed must be at least 128 bits")
+	}
+	if !validateMasterKeyPath(path) {
+		return nil,fmt.Errorf("invalid basePath, should start with m/<index>")
+	}
+
+	// derive master key
+	sk, err := DeriveMasterSK(seed)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to generate master key")
+	}
+
+	if len(path) > 2 { // try to derive child keys
+		relativePath := strings.Replace(path,"m","",1)
+		return PrivateKeyForRelativePath(sk.Bytes(),relativePath)
+	} else { // derive just seed to master
+		return e2types.BLSPrivateKeyFromBytes(sk.Bytes())
+	}
 }
 
 // DeriveMasterSK derives the master secret key from a seed.
