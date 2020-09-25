@@ -99,7 +99,13 @@ func TestPrivateKeyFromSeedAndPath(t *testing.T) {
 			name: "Good1",
 			seed: _byteArray("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"),
 			path: "m/12381/3600/0/0",
-			sk:   _bigInt("19075636639719741300162348744159133165933652615166291241450015728146974697031"),
+			sk:   _bigInt("46177761799149885423324319418907178427534014236612345059251079131808426427278"),
+		},
+		{
+			name: "Good2",
+			seed: _byteArray("52fdfc072182654f163f5f0f9a621d729566c74d10037c4d7bbb0407d1e2c64981855ad8681d0d86d1e91e00167939cb6694d2c422acd208a0072939487f6999"),
+			path: "m/12381/3600/0/0",
+			sk:   _bigInt("42833789910372195542782452087346535004799190497837791522284717918803358261356"),
 		},
 	}
 
@@ -121,8 +127,9 @@ func TestPrivateKeyFromSeedAndPath(t *testing.T) {
 func TestShortPrivateKey(t *testing.T) {
 	seed := _byteArray("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")
 	path := "m/12381/3600/0/41"
-	_, err := util.PrivateKeyFromSeedAndPath(seed, path)
+	sk, err := util.PrivateKeyFromSeedAndPath(seed, path)
 	assert.Nil(t, err)
+	assert.Equal(t, _bigInt("40053195758832663164718180086452958519214934897695771517699548485069286510185").Bytes(), sk.Marshal())
 }
 
 func TestDeriveMasterKey(t *testing.T) {

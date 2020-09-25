@@ -149,17 +149,23 @@ func parentSKToLamportPK(parentSK *big.Int, index uint32) ([]byte, error) {
 
 // hkdfModR hashes 32 random bytes into the subgroup of the BLS12-381 private keys.
 func hkdfModR(ikm []byte, keyInfo string) (*big.Int, error) {
-	prk := hkdf.Extract(sha256.New, append(ikm, i2OSP(big.NewInt(0), 1)...), []byte("BLS-SIG-KEYGEN-SALT-"))
-	okm := hkdf.Expand(sha256.New, prk, append([]byte(keyInfo), i2OSP(big.NewInt(int64(l)), 2)...))
-	okmOut := make([]byte, l)
-	read, err := okm.Read(okmOut)
-	if err != nil {
-		return nil, err
+	salt := []byte("BLS-SIG-KEYGEN-SALT-")
+	sk := big.NewInt(0)
+	for sk.Cmp(big.NewInt(0)) == 0 {
+		salt = SHA256(salt)
+		prk := hkdf.Extract(sha256.New, append(ikm, i2OSP(big.NewInt(0), 1)...), salt)
+		okm := hkdf.Expand(sha256.New, prk, append([]byte(keyInfo), i2OSP(big.NewInt(int64(l)), 2)...))
+		okmOut := make([]byte, l)
+		read, err := okm.Read(okmOut)
+		if err != nil {
+			return nil, err
+		}
+		if read != l {
+			return nil, fmt.Errorf("only read %d bytes", read)
+		}
+		sk = new(big.Int).Mod(osToIP(okmOut), r)
 	}
-	if read != l {
-		return nil, fmt.Errorf("only read %d bytes", read)
-	}
-	return new(big.Int).Mod(osToIP(okmOut), r), nil
+	return sk, nil
 }
 
 // osToIP turns a byte array in to an integer as per https://ietf.org/rfc/rfc3447.txt
