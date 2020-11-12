@@ -65,8 +65,8 @@ func PrivateKeyFromSeedAndPath(seed []byte, path string) (*e2types.BLSPrivateKey
 			if i == 0 {
 				return nil, fmt.Errorf("not master at path component %d", i)
 			}
-			index, err := strconv.ParseInt(pathBits[i], 10, 32)
-			if err != nil || index < 0 {
+			index, err := strconv.ParseUint(pathBits[i], 10, 32)
+			if err != nil {
 				return nil, fmt.Errorf("invalid index %q at path component %d", pathBits[i], i)
 			}
 			sk, err = DeriveChildSK(sk, uint32(index))
