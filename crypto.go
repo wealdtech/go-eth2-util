@@ -1,4 +1,4 @@
-// Copyright 2019, 2020 Weald Technology Trading
+// Copyright 2019 - 2023 Weald Technology Trading.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -31,11 +31,11 @@ func _bigInt(input string) *big.Int {
 	return result
 }
 
-var (
-	r = _bigInt("52435875175126190479447740508185965837690552500527637822603658699938581184513")
-	// 48 comes from ceil((1.5 * ceil(log2(r))) / 8)
-	l = 48
-)
+//nolint:gochecknoglobals
+var r = _bigInt("52435875175126190479447740508185965837690552500527637822603658699938581184513")
+
+// 48 comes from ceil((1.5 * ceil(log2(r))) / 8).
+const l = 48
 
 // PrivateKeyFromSeedAndPath generates a private key given a seed and a path.
 // Follows ERC-2334.
@@ -50,10 +50,10 @@ func PrivateKeyFromSeedAndPath(seed []byte, path string) (*e2types.BLSPrivateKey
 	var sk *big.Int
 	var err error
 	for i := range pathBits {
-		if pathBits[i] == "" {
+		switch pathBits[i] {
+		case "":
 			return nil, fmt.Errorf("no entry at path component %d", i)
-		}
-		if pathBits[i] == "m" {
+		case "m":
 			if i != 0 {
 				return nil, fmt.Errorf("invalid master at path component %d", i)
 			}
@@ -61,7 +61,7 @@ func PrivateKeyFromSeedAndPath(seed []byte, path string) (*e2types.BLSPrivateKey
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to generate master key at path component %d", i)
 			}
-		} else {
+		default:
 			if i == 0 {
 				return nil, fmt.Errorf("not master at path component %d", i)
 			}
@@ -90,6 +90,7 @@ func DeriveMasterSK(seed []byte) (*big.Int, error) {
 	if len(seed) < 16 {
 		return nil, errors.New("seed must be at least 128 bits")
 	}
+
 	return hkdfModR(seed, "")
 }
 
@@ -100,6 +101,7 @@ func DeriveChildSK(parentSK *big.Int, index uint32) (*big.Int, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return hkdfModR(pk, "")
 }
 
@@ -144,6 +146,7 @@ func parentSKToLamportPK(parentSK *big.Int, index uint32) ([]byte, error) {
 		copy(lamportPK[(i+255)*32:], SHA256(lamport1[i][:]))
 	}
 	compressedLamportPK := SHA256(lamportPK)
+
 	return compressedLamportPK, nil
 }
 
@@ -165,6 +168,7 @@ func hkdfModR(ikm []byte, keyInfo string) (*big.Int, error) {
 		}
 		sk = new(big.Int).Mod(osToIP(okmOut), r)
 	}
+
 	return sk, nil
 }
 
@@ -178,5 +182,6 @@ func i2OSP(data *big.Int, resLen int) []byte {
 	res := make([]byte, resLen)
 	bytes := data.Bytes()
 	copy(res[resLen-len(bytes):], bytes)
+
 	return res
 }
